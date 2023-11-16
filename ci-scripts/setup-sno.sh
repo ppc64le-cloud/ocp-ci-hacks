@@ -41,7 +41,7 @@ CONFIG_DIR="/tmp/${CLUSTER_NAME}-config"
 IMAGES_DIR="/var/lib/tftpboot/images/${CLUSTER_NAME}"
 WWW_DIR="/var/www/html/${CLUSTER_NAME}"
 
-mkdir -p $CONFIG_DIR $IMAGES_DIR $WWW_DIR
+mkdir -p $IMAGES_DIR $WWW_DIR
 
 cat install-config-template.yaml | envsubst > ${CONFIG_DIR}/install-config.yaml
 
