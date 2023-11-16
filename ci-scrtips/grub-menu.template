@@ -1,0 +1,5 @@
+    if [ ${GRUB_MAC_CONFIG} = "${MAC_ADDRESS}" ]; then
+        linux ${KERNEL_PATH} ignition.firstboot ignition.platform.id=metal 'coreos.live.rootfs_url=${ROOTFS_URL}' ignition.config.url=${IGNITION_URL}
+        initrd ${INITRAMFS_PATH}
+    fi
+
