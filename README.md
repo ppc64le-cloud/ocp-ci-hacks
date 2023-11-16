@@ -1,1 +1,1 @@
-# ocp-sno-hacks
+# ocp-ci-hacks
