@@ -18,8 +18,6 @@ CONFIG_DIR="/tmp/${CLUSTER_NAME}-config"
 IMAGES_DIR="/var/lib/tftpboot/images/${CLUSTER_NAME}"
 WWW_DIR="/var/www/html/${CLUSTER_NAME}"
 
-rm -rf /tmp/${CLUSTER_NAME}* ${IMAGES_DIR} ${WWW_DIR}
-
 LOCK_FILE="lockfile.lock"
 (
 flock -n 200 || exit 1;
@@ -35,3 +33,5 @@ sed -i "/# menuentry for $(printf '%s' "${CLUSTER_NAME}") start/,/# menuentry fo
 echo "restarting tftp & dhcpd"
 systemctl restart tftp;
 ) 200>"$LOCK_FILE"
+
+rm -rf /tmp/${CLUSTER_NAME}* ${IMAGES_DIR} ${WWW_DIR}
