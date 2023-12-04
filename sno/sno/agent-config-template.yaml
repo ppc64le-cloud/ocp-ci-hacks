@@ -1,0 +1,24 @@
+apiVersion: v1alpha1
+metadata:
+  name: ${CLUSTER_NAME}
+rendezvousIP: ${IP_ADDRESS}
+hosts:
+  - hostname: ${CLUSTER_NAME}
+    rootDeviceHints: 
+      deviceName: ${INSTALLATION_DISK}
+    role: master
+    interfaces:
+       - name: eth0
+         macAddress: ${MAC_ADDRESS}
+    networkConfig:
+      interfaces:
+        - name: eth0
+          type: ethernet
+          state: up
+          mac-address: ${MAC_ADDRESS}
+          ipv4:
+            enabled: true
+            address:
+              - ip: ${IP_ADDRESS}
+                prefix-length: ${NETWORK_PREFIX}
+            dhcp: true
