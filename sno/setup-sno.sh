@@ -50,7 +50,6 @@ CONFIG_DIR="/tmp/${CLUSTER_NAME}-config"
 IMAGES_DIR="/var/lib/tftpboot/images/${CLUSTER_NAME}"
 WWW_DIR="/var/www/html/${CLUSTER_NAME}"
 
-rm -rf $CONFIG_DIR $IMAGES_DIR $WWW_DIR
 mkdir -p $IMAGES_DIR $WWW_DIR $CONFIG_DIR
 
 # install required package for agent based installer
