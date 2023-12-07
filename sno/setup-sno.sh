@@ -23,36 +23,86 @@ KERNEL_URL=$6
 INITRAMFS_URL=$7
 BASTION_HTTP_URL=$8
 export MAC_ADDRESS=$9
-IP_ADDRESS=${10}
+export IP_ADDRESS=${10}
+
+if [[ $# -eq 10 ]]; then
+    export INSTALL_TYPE="sno"
+else
+    export INSTALL_TYPE=${11}
+    export OCP_VERSION=${12}
+    export INSTALLER_URL=${13}
+fi
 
 IFS=""
 
 POWERVS_VSI_NAME="${CLUSTER_NAME}-worker"
 
 set +x
-
-export PULL_SECRET="$(cat /root/.sno/pull-secret)"
+export PULL_SECRET_FILE=/root/.sno/pull-secret
+export PULL_SECRET="$(cat $PULL_SECRET_FILE)"
 SSH_PUB_KEY_FILE=/root/.sno/id_rsa.pub
 export SSH_PUB_KEY="$(cat $SSH_PUB_KEY_FILE)"
+export OFFLINE_TOKEN_FILE=/root/.sno/offline-token
 
-set -x
+#set -x
 
 CONFIG_DIR="/tmp/${CLUSTER_NAME}-config"
 IMAGES_DIR="/var/lib/tftpboot/images/${CLUSTER_NAME}"
 WWW_DIR="/var/www/html/${CLUSTER_NAME}"
 
-mkdir -p $IMAGES_DIR $WWW_DIR
+mkdir -p $IMAGES_DIR $WWW_DIR $CONFIG_DIR
 
-cat install-config-template.yaml | envsubst > ${CONFIG_DIR}/install-config.yaml
+# install required package for agent based installer
+dnf install -y /usr/bin/nmstatectl coreos-installer jq
 
-openshift-install --dir=${CONFIG_DIR} create single-node-ignition-config
+# Download the openshift-install
+if [[ ! -z ${INSTALLER_URL} ]]; then
+   curl ${INSTALLER_URL} -o openshift-install-linux.tar.gz
+   tar xzvf openshift-install-linux.tar.gz
+fi
 
-cp ${CONFIG_DIR}/bootstrap-in-place-for-live-iso.ign ${WWW_DIR}/bootstrap.ign
-chmod 644 ${WWW_DIR}/bootstrap.ign
-curl ${ROOTFS_URL} -o ${WWW_DIR}/rootfs.img
+sno_prepare_cluster() {
+    cat install-config-template.yaml | envsubst > ${CONFIG_DIR}/install-config.yaml
 
-curl ${INITRAMFS_URL} -o ${IMAGES_DIR}/initramfs.img
-curl ${KERNEL_URL} -o ${IMAGES_DIR}/kernel
+    openshift-install --dir=${CONFIG_DIR} create single-node-ignition-config
+
+    cp ${CONFIG_DIR}/bootstrap-in-place-for-live-iso.ign ${WWW_DIR}/bootstrap.ign
+    chmod 644 ${WWW_DIR}/bootstrap.ign
+    curl ${ROOTFS_URL} -o ${WWW_DIR}/rootfs.img
+
+    curl ${INITRAMFS_URL} -o ${IMAGES_DIR}/initramfs.img
+    curl ${KERNEL_URL} -o ${IMAGES_DIR}/kernel
+}
+
+agent_prepare_cluster() {
+    export NETWORK_PREFIX=$(echo ${MACHINE_NETWORK}|awk -F'/' '{print $2}')
+    cat install-config-template.yaml | envsubst > ${CONFIG_DIR}/install-config.yaml
+    cat agent-config-template.yaml | envsubst > ${CONFIG_DIR}/agent-config.yaml
+
+    ./openshift-install --dir=${CONFIG_DIR} agent create image
+
+    mkdir -p ${CONFIG_DIR}/pxe
+    coreos-installer iso ignition show ${CONFIG_DIR}/agent.ppc64le.iso > ${CONFIG_DIR}/pxe/agent.ign
+    coreos-installer iso extract pxe -o ${CONFIG_DIR}/pxe ${CONFIG_DIR}/agent.ppc64le.iso
+    cp ${CONFIG_DIR}/pxe/agent.ppc64le-initrd.img ${IMAGES_DIR}/initramfs.img
+    cp ${CONFIG_DIR}/pxe/agent.ppc64le-vmlinuz ${IMAGES_DIR}/kernel
+    chmod +x ${IMAGES_DIR}/*
+    cp ${CONFIG_DIR}/pxe/agent.ppc64le-rootfs.img ${WWW_DIR}/rootfs.img
+    chmod +x ${WWW_DIR}/rootfs.img
+    cp ${CONFIG_DIR}/pxe/agent.ign ${WWW_DIR}/bootstrap.ign
+}
+
+if [[ ${INSTALL_TYPE} == "assisted" ]]; then
+    echo "call to ai_prepare_cluster"
+    . assisted-sno.sh
+    ai_prepare_cluster
+elif [[ ${INSTALL_TYPE} == "agent" ]]; then
+    echo "call to agent_prepare_cluster"
+    agent_prepare_cluster
+else
+    echo "call to sno_prepare_cluster"
+    sno_prepare_cluster
+fi
 
 export GRUB_MAC_CONFIG="\${net_default_mac}"
 export ROOTFS_URL=${BASTION_HTTP_URL}/${CLUSTER_NAME}/rootfs.img
