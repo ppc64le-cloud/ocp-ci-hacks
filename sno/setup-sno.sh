@@ -30,7 +30,7 @@ if [[ $# -eq 10 ]]; then
 else
     export INSTALL_TYPE=${11}
     export OCP_VERSION=${12}
-    export INSTALLER_URL=${13}
+    export INSTALLER_URL=${13:-}
 fi
 
 IFS=""
