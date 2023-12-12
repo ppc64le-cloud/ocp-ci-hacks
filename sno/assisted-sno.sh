@@ -100,7 +100,7 @@ EOF
 download_iso() {
 
   echo "Downloading ISO ${ISO_URL} ..."
-  wget --quiet -O ${CONFIG_DIR}/assisted.iso ${ISO_URL}
+  curl ${ISO_URL} -o ${CONFIG_DIR}/assisted.iso
 
   if [[ -f "${CONFIG_DIR}/assisted.iso" ]]; then
     echo "Extract pxe files from ISO"
