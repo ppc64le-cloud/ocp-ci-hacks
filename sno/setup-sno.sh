@@ -44,7 +44,7 @@ SSH_PUB_KEY_FILE=/root/.sno/id_rsa.pub
 export SSH_PUB_KEY="$(cat $SSH_PUB_KEY_FILE)"
 export OFFLINE_TOKEN_FILE=/root/.sno/offline-token
 
-#set -x
+set -x
 
 CONFIG_DIR="/tmp/${CLUSTER_NAME}-config"
 IMAGES_DIR="/var/lib/tftpboot/images/${CLUSTER_NAME}"
@@ -52,13 +52,15 @@ WWW_DIR="/var/www/html/${CLUSTER_NAME}"
 
 mkdir -p $IMAGES_DIR $WWW_DIR $CONFIG_DIR
 
-# install required package for agent based installer
-dnf install -y /usr/bin/nmstatectl coreos-installer jq
-
 # Download the openshift-install
-if [[ ! -z ${INSTALLER_URL} ]]; then
-   curl ${INSTALLER_URL} -o openshift-install-linux.tar.gz
-   tar xzvf openshift-install-linux.tar.gz
+if [[ ${INSTALL_TYPE} != "sno" ]]; then
+    # install required package for agent based installer
+    dnf install -y /usr/bin/nmstatectl coreos-installer jq
+
+    if [[ ! -z ${INSTALLER_URL} ]]; then
+        curl ${INSTALLER_URL} -o openshift-install-linux.tar.gz
+        tar xzvf openshift-install-linux.tar.gz
+    fi
 fi
 
 sno_prepare_cluster() {
